@@ -9,7 +9,7 @@ export default defineConfig({
         plugins: [['babel-plugin-react-compiler']],
       },
     }),
-    base: process.env.VITE_BASE_PATH || "/shapes"
+    base: process.env.VITE_BASE_PATH || "/shapes",
   ],
    
 })
