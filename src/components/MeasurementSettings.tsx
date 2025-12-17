@@ -56,6 +56,8 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
   const setMeasurementExtensionLineColor = useStore((state) => state.setMeasurementExtensionLineColor);
   const setMeasurementArrowSizeStore = useStore((state) => state.setMeasurementArrowSize);
   const setMeasurementExtensionOverhangStore = useStore((state) => state.setMeasurementExtensionOverhang);
+  const setMeasurementLabelTextColor = useStore((state) => state.setMeasurementLabelTextColor);
+  const setMeasurementLabelBgColor = useStore((state) => state.setMeasurementLabelBackgroundColor);
   const setMeasurementLabelFontSize = useStore((state) => state.setMeasurementLabelFontSize);
     const setMeasurementCircleColor = useStore((state) => state.setMeasurementCircleColor); 
   const setMeasurementCircleSize = useStore((state) => state.setMeasurementCircleSize); 
@@ -145,6 +147,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
     const color = e.target.value;
     setLabelBgColorState(color);
     updateMeasurementLabelSettings(activeMeasurement.id, { labelBackgroundColor: color });
+    setMeasurementLabelBgColor(color);
     updateVisualColors(activeMeasurement.id);
     refreshAllMeasurements(); 
   };
@@ -162,6 +165,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
     const color = e.target.value;
     setLabelTextColorState(color);
     updateMeasurementLabelSettings(activeMeasurement.id, { labelTextColor: color });
+     setMeasurementLabelTextColor(color);
     updateVisualColors(activeMeasurement.id);
     refreshAllMeasurements(); 
   };
