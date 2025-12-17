@@ -1,7 +1,6 @@
 // src/drawing/dimensions/dimensionManager.ts
 import * as THREE from 'three';
-import { scene } from '../../core/scene';
-import { getSelectedObject } from '../selection';
+
 
 
 

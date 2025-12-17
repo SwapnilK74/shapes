@@ -4,7 +4,7 @@ import { clearAllDimensions } from './dimensionManager';
 import { createPlaneDimensions } from './planeDimensions';
 import { createCircleDimensions } from './circleDimensions';
 import { createTriangleDimensions } from './triangleDimensions';
-import { createLineDimensions } from './lineDimensions';
+
 
 
 

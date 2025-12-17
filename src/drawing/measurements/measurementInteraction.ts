@@ -1,6 +1,6 @@
 // src/drawing/measurements/measurementInteraction.ts
 import * as THREE from 'three';
-import { canvas } from '../../core/renderer';
+
 import {
   getMeasurementById,
   setActiveMeasurement,
@@ -11,7 +11,7 @@ import {
 } from './measurementManager';
 import { projectMouseToPlaneForDom } from '../sharedPointer';
 import { 
-  renderMeasurement,
+  
   updateMeasurementPositions,
   setMeasurementSelected,
   updateMeasurementColors,
