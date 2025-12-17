@@ -97,17 +97,17 @@ export function beginSelectionDrag(event: MouseEvent, domElement: HTMLElement) {
     mesh instanceof THREE.Mesh &&
     mesh.geometry instanceof THREE.CircleGeometry;
 
-  const isTriangle =
-    mesh instanceof THREE.Mesh &&
-    mesh.geometry instanceof THREE.BufferGeometry &&
-    mesh.geometry.getAttribute('position')?.count === 3;
+  // const isTriangle =
+  //   mesh instanceof THREE.Mesh &&
+  //   mesh.geometry instanceof THREE.BufferGeometry &&
+  //   mesh.geometry.getAttribute('position')?.count === 3;
 
   if (isCircle) {
     activeResizeKind = 'rotate-circle';
     beginCircleRotate(activeResizeHandle);
-  } else if (isTriangle) {
-    activeResizeKind = 'rotate-triangle';
-    beginTriangleRotate(activeResizeHandle);
+  // } else if (isTriangle) {
+  //   activeResizeKind = 'rotate-triangle';
+  //   beginTriangleRotate(activeResizeHandle);
   } else {
     activeResizeKind = 'rotate-plane';
     beginPlaneRotate(activeResizeHandle);
@@ -210,8 +210,8 @@ export function updateSelectionDrag(event: MouseEvent, domElement: HTMLElement) 
     updatePlaneRotate(event, domElement);
   } else if (activeResizeKind === 'rotate-circle') {    
     updateCircleRotate(event, domElement);
-  } else if (activeResizeKind === 'rotate-triangle') {  
-    updateTriangleRotate(event, domElement);
+  // } else if (activeResizeKind === 'rotate-triangle') {  
+  //   updateTriangleRotate(event, domElement);
   }
     return;
   }
@@ -249,7 +249,7 @@ export function endSelectionDrag() {
   if (activeResizeKind === 'line') endLineResize();
 if (activeResizeKind === 'rotate-plane') endPlaneRotate();         
 if (activeResizeKind === 'rotate-circle') endCircleRotate();       
-if (activeResizeKind === 'rotate-triangle') endTriangleRotate(); 
+// if (activeResizeKind === 'rotate-triangle') endTriangleRotate(); 
 
   activeResizeHandle = null;
   activeResizeKind = null;

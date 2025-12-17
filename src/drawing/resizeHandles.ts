@@ -76,6 +76,11 @@ export function createShapeResizeHandles(
   }
   const localBox = geometry.boundingBox!;
 
+   if (!boundingBox) {
+    console.warn('Bounding box is null, cannot create resize handles');
+    return handles;
+  }
+
   const min = localBox.min;
   const max = localBox.max;
 

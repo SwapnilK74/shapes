@@ -6,7 +6,7 @@ import {
   setDefaultDimensionOffset,
 } from '../drawing/measurements/measurementSettings';
 import { 
-  setActiveMeasurementOffset,
+ 
   refreshAllMeasurements, 
 } from '../drawing/measurements/measurementInteraction';
 import { 
@@ -59,7 +59,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
   const setMeasurementLabelFontSize = useStore((state) => state.setMeasurementLabelFontSize);
     const setMeasurementCircleColor = useStore((state) => state.setMeasurementCircleColor); 
   const setMeasurementCircleSize = useStore((state) => state.setMeasurementCircleSize); 
-  const setMeasurementShowCircles = useStore((state) => state.setMeasurementShowCircles); 
+  // const setMeasurementShowCircles = useStore((state) => state.setMeasurementShowCircles); 
  const setMeasurementLabelBgOpacity = useStore((state) => state.setMeasurementLabelBackgroundOpacity);
 
   // State for all settings
@@ -71,7 +71,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
   const [labelBgOpacity, setLabelBgOpacityState] = useState(defaultLabelBgOpacity);
   const [labelTextColor, setLabelTextColorState] = useState(defaultLabelTextColor);
   const [labelFontSize, setLabelFontSizeState] = useState(defaultLabelFontSize);
-  const [dimensionOffset, setDimensionOffsetState] = useState(0);
+  // const [dimensionOffset, setDimensionOffsetState] = useState(0);
   const [defaultOffset, setDefaultOffsetState] = useState(defaultDimensionOffset);
 
   const [circleColor, setCircleColorState] = useState(defaultCircleColor); 
@@ -89,7 +89,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
       setLabelBgOpacityState(activeMeasurement.labelBackgroundOpacity ?? 0.9);
       setLabelTextColorState(activeMeasurement.labelTextColor);
       setLabelFontSizeState(activeMeasurement.labelFontSize);
-      setDimensionOffsetState(activeMeasurement.dimensionOffset);
+      // setDimensionOffsetState(activeMeasurement.dimensionOffset);
             setCircleColorState(activeMeasurement.circleColor);
       setCircleSizeState(activeMeasurement.circleSize);
       setShowCirclesState(activeMeasurement.showCircles); 
@@ -174,12 +174,12 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
     refreshAllMeasurements(); 
   };
 
-  const handleOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const offset = parseFloat(e.target.value);
-    setDimensionOffsetState(offset);
-    setActiveMeasurementOffset(offset);
-    refreshAllMeasurements(); 
-  };
+  // const handleOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const offset = parseFloat(e.target.value);
+  //   setDimensionOffsetState(offset);
+  //   setActiveMeasurementOffset(offset);
+  //   refreshAllMeasurements(); 
+  // };
 
   const handleDefaultOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const offset = parseFloat(e.target.value);

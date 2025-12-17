@@ -11,7 +11,7 @@ let initialMouseAngle = 0;
 let hasInitialAngle = false; // Add this flag
 let objectCenter = new THREE.Vector2();
 
-export function beginPlaneRotate(handleObject: THREE.Object3D) {
+export function beginPlaneRotate(_handleObject: THREE.Object3D) {
   const mesh = getSelectedObject();
   if (!mesh || !(mesh instanceof THREE.Mesh)) return;
 

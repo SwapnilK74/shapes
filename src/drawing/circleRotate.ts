@@ -15,7 +15,7 @@ let objectCenter = new THREE.Vector2();
  * Starts the circle rotation operation.
  * Captures the initial rotation and mouse angle.
  */
-export function beginCircleRotate(handleObject: THREE.Object3D) {
+export function beginCircleRotate(_handleObject: THREE.Object3D) {
   const mesh = getSelectedObject();
   if (!mesh || !(mesh instanceof THREE.Mesh)) return;
 

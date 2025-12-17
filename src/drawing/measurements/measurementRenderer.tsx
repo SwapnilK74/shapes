@@ -6,10 +6,10 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { scene } from '../../core/scene';
 import { camera } from '../../core/camera';
 import { canvas } from '../../core/renderer';
-import { getMeasurementSettings, getMeasurementArrowStyle, setLabelBackgroundOpacity } from './measurementSettings';
+import { getMeasurementSettings, } from './measurementSettings';
 import type { Measurement } from './measurementManager';
 import { calculatePerpendicularDirection } from './measurementCalculator';
-import { getMeasurementById, getActiveMeasurementId } from './measurementManager';
+import { getMeasurementById,  } from './measurementManager';
 import { hexToNumber } from '../../store';
 import { CircleGeometry } from 'three';
 
@@ -351,7 +351,7 @@ function applyColorWithOpacity(color: string, opacity: number): string {
  */
 function createMeasurementLabel(
   text: string,
-  position: THREE.Vector3,
+  _position: THREE.Vector3,
   measurementId: string,
   settings: ReturnType<typeof getMeasurementOrDefaultSettings>
 ): HTMLDivElement {
@@ -876,7 +876,7 @@ export function updateMeasurementLabel(
 export function updateAllMeasurementLabels(canvas: HTMLCanvasElement) {
   if (!measurementLabelContainer) return;
   
-  measurementObjects.forEach((objects, measurementId) => {
+  measurementObjects.forEach((_objects, measurementId) => {
     const labelElement = measurementLabelContainer!.querySelector(
       `[data-measurement-id="${measurementId}"]`
     ) as HTMLElement;
@@ -886,7 +886,7 @@ export function updateAllMeasurementLabels(canvas: HTMLCanvasElement) {
     const measurement = getMeasurementById(measurementId);
     if (!measurement) return;
     
-    const settings = getMeasurementOrDefaultSettings(measurement);
+    // const settings = getMeasurementOrDefaultSettings(measurement);
     
     const startPoint = measurement.startPoint;
     const endPoint = measurement.endPoint;
@@ -1009,7 +1009,7 @@ export function clearAllMeasurementVisuals() {
   });
   measurementObjects.clear();
 
-  measurementPointCircles.forEach((circles, measurementId) =>{
+  measurementPointCircles.forEach((_circles, measurementId) =>{
     removeMeasurementPointCircles(measurementId);
   });
     measurementPointCircles.clear();

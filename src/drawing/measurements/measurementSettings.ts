@@ -229,7 +229,7 @@ export function setDefaultDimensionOffset(offset: number) {
 
 // Bulk update
 export function updateMeasurementSettings(partial: Partial<MeasurementSettingsConfig>) {
-  const current = useStore.getState().measurementSettings;
+  // const current = useStore.getState().measurementSettings;
   
   // Convert any number colors to hex strings
   const updates: any = {};

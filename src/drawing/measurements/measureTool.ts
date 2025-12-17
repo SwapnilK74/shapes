@@ -20,7 +20,7 @@ import {
   type SnapEdge,
   createPlaneGuideLineVisuals 
 } from './snapEdges';
-import { updateEdgeIndicator, disposeEdgeIndicator, showAllGuideLines, clearAllGuideLines } from './edgeIndicator';
+import { updateEdgeIndicator, disposeEdgeIndicator } from './edgeIndicator';
 
 // Snap mode flags
 let snapToPoints = true;
