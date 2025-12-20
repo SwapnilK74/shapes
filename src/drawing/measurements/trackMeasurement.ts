@@ -293,11 +293,11 @@ function worldToLocal(worldPoint: THREE.Vector3, shape: THREE.Object3D): THREE.V
 }
 
 
-function localToWorld(localPoint: THREE.Vector3, shape: THREE.Object3D): THREE.Vector3 {
-  const worldPoint = localPoint.clone();
-  shape.localToWorld(worldPoint);
-  return worldPoint;
-}
+// function localToWorld(localPoint: THREE.Vector3, shape: THREE.Object3D): THREE.Vector3 {
+//   const worldPoint = localPoint.clone();
+//   shape.localToWorld(worldPoint);
+//   return worldPoint;
+// }
 
 
 
