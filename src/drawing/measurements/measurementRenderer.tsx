@@ -8,7 +8,7 @@ import { camera } from '../../core/camera';
 import { canvas } from '../../core/renderer';
 import { getMeasurementSettings, } from './measurementSettings';
 import type { Measurement } from './measurementManager';
-import { calculatePerpendicularDirection } from './measurementCalculator';
+import { calculatePerpendicularDirection, formatMeasurementDistance } from './measurementCalculator';
 import { getMeasurementById,  } from './measurementManager';
 import { hexToNumber } from '../../store';
 import { CircleGeometry } from 'three';
@@ -34,7 +34,11 @@ function getMeasurementOrDefaultSettings(measurement: Measurement) {
     extensionLineColor: measurement.extensionLineColor 
       ? hexToNumber(measurement.extensionLineColor) 
       : globalDefaults.extensionLineColor,
-    arrowSize: measurement.arrowSize ?? globalDefaults.arrowSize,
+    arrowColor: measurement.arrowColor
+      ? hexToNumber(measurement.arrowColor)
+      : globalDefaults.arrowColor,
+    
+      arrowSize: measurement.arrowSize ?? globalDefaults.arrowSize,
     arrowStyle: measurement.arrowStyle ?? globalDefaults.arrowStyle,
     extensionOverhang: measurement.extensionOverhang ?? globalDefaults.extensionOverhang,
     
@@ -222,7 +226,8 @@ function createFilledArrow(
 function createMeasurementLine(
   startPoint: THREE.Vector3,
   endPoint: THREE.Vector3,
-  color: number,
+  dimensionColor: number,
+  arrowColor: number,
   arrowSize: number,
   arrowStyle: 'filled' | 'open' | 'none'
 ): THREE.Object3D[] {
@@ -236,7 +241,7 @@ function createMeasurementLine(
   ]);
   
   const lineMaterial = new LineMaterial({
-    color: color,
+    color: dimensionColor,
     linewidth: 3,
     resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
     worldUnits: false
@@ -267,8 +272,8 @@ function createMeasurementLine(
       backwardDirection.clone().multiplyScalar(arrowHeight)
     );
     
-    const arrow1 = createFilledArrow(startArrowPos, backwardDirection, color, arrowSize);
-    const arrow2 = createFilledArrow(endArrowPos, forwardDirection, color, arrowSize);
+    const arrow1 = createFilledArrow(startArrowPos, backwardDirection, arrowColor, arrowSize);
+    const arrow2 = createFilledArrow(endArrowPos, forwardDirection, arrowColor, arrowSize);
     
     (arrow1 as any).isUiOnly = true;
     (arrow2 as any).isUiOnly = true;
@@ -400,6 +405,31 @@ function projectToScreen(
   return { x: screenX, y: screenY };
 }
 
+
+/**
+ * Toggle visibility of all measurements
+ */
+export function toggleAllMeasurementsVisibility(visible: boolean) {
+  // Toggle 3D objects visibility
+  measurementObjects.forEach((objects) => {
+    objects.forEach(obj => {
+      obj.visible = visible;
+    });
+  });
+
+  // Toggle point circles visibility
+  measurementPointCircles.forEach((circles) => {
+    circles.forEach(circle => {
+      circle.visible = visible;
+    });
+  });
+
+  // Toggle label container visibility
+  if (measurementLabelContainer) {
+    measurementLabelContainer.style.display = visible ? 'block' : 'none';
+  }
+}
+
 /**
  * Render complete measurement (first time creation)
  */
@@ -450,6 +480,7 @@ export function renderMeasurement(
     dimLineStart,
     dimLineEnd,
     settings.dimensionLineColor,
+    settings.arrowColor,
     settings.arrowSize,
     settings.arrowStyle
   );
@@ -472,7 +503,7 @@ export function renderMeasurement(
     dimLineEnd, 
     labelOffset
   );
-  const distanceText = `${measurement.distance.toFixed(2)} m`;
+  const distanceText = formatMeasurementDistance(measurement.distance);
   const label = createMeasurementLabel(distanceText, labelPosition, measurement.id, settings);
   
   // Store for cleanup
@@ -621,7 +652,7 @@ export function updateMeasurementPositions(
       const screenPos = projectToScreen(labelPosition, canvas);
       labelElement.style.left = `${screenPos.x}px`;
       labelElement.style.top = `${screenPos.y}px`;
-      labelElement.textContent = `${measurement.distance.toFixed(2)} m`;
+      labelElement.textContent = formatMeasurementDistance(measurement.distance);
     }
   }
 }
@@ -729,8 +760,8 @@ const extensionDirection = offset >= 0 ? perpDirection : perpDirection.clone().n
 
   // Create new arrows
   if (settings.arrowStyle !== 'none') {
-    const arrow1 = createFilledArrow(startArrowPos, dimBackward, settings.dimensionLineColor, arrowSize);
-    const arrow2 = createFilledArrow(endArrowPos, dimForward, settings.dimensionLineColor, arrowSize);
+    const arrow1 = createFilledArrow(startArrowPos, dimBackward, settings.arrowColor, arrowSize);
+    const arrow2 = createFilledArrow(endArrowPos, dimForward, settings.arrowColor, arrowSize);
 
     (arrow1 as any).isMeasurementArrow = true;
     (arrow2 as any).isMeasurementArrow = true;
@@ -769,7 +800,7 @@ export function updateMeasurementColors(measurementId: string) {
       anyObj.material.needsUpdate = true;
     }
     if (anyObj.isMeasurementArrow && obj instanceof THREE.Mesh) {
-      obj.material.color.setHex(settings.dimensionLineColor);
+      obj.material.color.setHex(settings.arrowColor);
       obj.material.needsUpdate = true;
     }
   });
@@ -912,6 +943,8 @@ export function updateAllMeasurementLabels(canvas: HTMLCanvasElement) {
     const screenPos = projectToScreen(labelPosition, canvas);
     labelElement.style.left = `${screenPos.x}px`;
     labelElement.style.top = `${screenPos.y}px`;
+
+    labelElement.textContent = formatMeasurementDistance(measurement.distance);
   });
 }
 
@@ -941,7 +974,7 @@ export function setMeasurementSelected(measurementId: string, selected: boolean)
     }
     
     if (anyObj.isMeasurementArrow && obj instanceof THREE.Mesh) {
-      obj.material.color.setHex(settings.dimensionLineColor);
+      obj.material.color.setHex(settings.arrowColor);
       obj.material.needsUpdate = true;
     }
   });

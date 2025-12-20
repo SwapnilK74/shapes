@@ -15,6 +15,7 @@ export interface MeasurementSettingsConfig {
   extensionLineWidth: number;
   
   // Arrow settings
+  arrowColor: number;
   arrowSize: number;
   arrowStyle: ArrowStyle;
   
@@ -55,6 +56,7 @@ export function getMeasurementSettings(): MeasurementSettingsConfig {
     dimensionLineWidth: settings.dimensionLineWidth,
     extensionLineWidth: settings.extensionLineWidth,
     
+    arrowColor: hexToNumber(settings.arrowColor),
     arrowSize: settings.arrowSize,
     arrowStyle: settings.arrowStyle,
     

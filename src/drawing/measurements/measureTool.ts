@@ -1,7 +1,7 @@
 // src/drawing/measurements/measureTool.ts
 import * as THREE from 'three';
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
-import { scene } from '../../core/scene';
+import { scene, getDrawingBounds } from '../../core/scene';
 import { canvas } from '../../core/renderer';
 import { collectAllSnapPoints, findNearestSnapPoint, type SnapPoint } from './snapDetection';
 import { updateSnapIndicator, disposeSnapIndicator } from './snapIndicator';
@@ -12,7 +12,7 @@ import {
 } from './measurementManager';
 import { projectMouseToPlaneForDom } from '../sharedPointer';
 import { renderMeasurement } from './measurementRenderer';
-import { calculateDimensionOffset } from './measurementCalculator';
+import { calculateDimensionOffset, clampDimensionOffset, MIN_DIMENSION_LENGTH_M } from './measurementCalculator';
 import { getMeasurementSettings } from './measurementSettings';
 import { 
   collectAllSnapEdges, 
@@ -21,6 +21,8 @@ import {
   createPlaneGuideLineVisuals 
 } from './snapEdges';
 import { updateEdgeIndicator, disposeEdgeIndicator } from './edgeIndicator';
+import { attachMeasurementToShapes } from './trackMeasurement';
+
 
 // Snap mode flags
 let snapToPoints = true;
@@ -34,6 +36,9 @@ let secondPoint: THREE.Vector3 | null = null;
 let currentSnapPoint: THREE.Vector3 | null = null;
 let previewDimensionOffset: number = 1.0;
 
+let firstPointShapeUuid: string | undefined;
+let secondPointShapeUuid: string | undefined;
+
 // ✅ NEW: Store second click position for "click again for zero offset" feature
 let secondClickPosition: THREE.Vector3 | null = null;
 const SAME_POINT_TOLERANCE = 0.15; // Distance threshold to consider it "same point"
@@ -45,6 +50,25 @@ let previewExtensions: THREE.Line[] = [];
 
 // Transform tracking for guide line updates
 let trackedMeshes = new Map<number, { position: THREE.Vector3; rotation: THREE.Euler; scale: THREE.Vector3 }>();
+
+
+function clampToCanvasBounds(p: THREE.Vector3): THREE.Vector3 {
+  const { width, height } = getDrawingBounds();
+  const margin = 0.5; // 0.5 m each side
+
+  const halfW = width / 2;
+  const halfH = height / 2;
+
+  const minX = -halfW + margin;
+  const maxX =  halfW - margin;
+  const minY = -halfH + margin;
+  const maxY =  halfH - margin;
+
+  const clamped = p.clone();
+  clamped.x = Math.max(minX, Math.min(maxX, clamped.x));
+  clamped.y = Math.max(minY, Math.min(maxY, clamped.y));
+  return clamped;
+}
 
 /**
  * Helper: get best snap (point or edge) for current mouse position.
@@ -92,6 +116,22 @@ function getBestSnap(mouseWorldPos: THREE.Vector3): { snap: SnapPoint | null; ed
   return { snap: bestSnap, edge: bestEdge };
 }
 
+
+/**
+ * Resolve a SnapPoint's shape to the mesh UUID
+ */
+function findShapeUuidFromSnap(snap: SnapPoint): string | undefined {
+  let foundUuid: string | undefined;
+
+  scene.traverse(object => {
+    if (object instanceof THREE.Mesh && object.id === snap.shapeId) {
+      foundUuid = object.uuid;
+    }
+  });
+
+  return foundUuid;
+}
+
 /**
  * Show or hide guide lines for all planes in the scene
  */
@@ -126,6 +166,41 @@ function toggleGuideLineVisibility(visible: boolean) {
     trackedMeshes.clear();
   }
 }
+
+/**
+ * Find which shape (if any) a point belongs to
+ * Returns the shape's UUID if the point is on a snap point from that shape
+ */
+// function findShapeAtPoint(point: THREE.Vector3): string | undefined {
+//   const snapThreshold = 0.01; // Very small threshold for exact match
+  
+//   // Collect all snap points from the scene
+//   const allSnapPoints = collectAllSnapPoints(scene);
+  
+//   // Find if our point matches any snap point
+//   for (const snapPoint of allSnapPoints) {
+//     if (point.distanceTo(snapPoint.position) < snapThreshold) {
+//       // Found a match! Now get the mesh by its id
+//       let foundUuid: string | undefined = undefined;
+      
+//       scene.traverse((object) => {
+//         if (object instanceof THREE.Mesh && object.id === snapPoint.shapeId) {
+//           foundUuid = object.uuid;
+//         }
+//       });
+      
+//       // Return the UUID if found
+//       if (foundUuid) {
+//         return foundUuid;
+//       }
+//     }
+//   }
+  
+//   return undefined;
+// }
+
+
+
 
 /**
  * Track a mesh's current transform state
@@ -278,13 +353,16 @@ export function handleMeasureMouseMove(
     
     currentSnapPoint = mouseWorldPos.clone();
 
-    previewDimensionOffset = calculateDimensionOffset(
+    const rawOffset = calculateDimensionOffset(
       firstPoint,
       secondPoint,
       mouseWorldPos
     );
 
+    
+    previewDimensionOffset = clampDimensionOffset(rawOffset, 20);
     updatePreviewDimension(firstPoint, secondPoint, previewDimensionOffset);
+
   }
 }
 
@@ -324,8 +402,10 @@ export function handleMeasureClick(
   // CLICK 1: Set first point
   if (!firstPoint) {
     if (!currentSnapPoint) return;
-    firstPoint = currentSnapPoint.clone();
-    secondClickPosition = null; // ✅ Reset second click tracking
+    firstPoint = clampToCanvasBounds(currentSnapPoint);
+    secondClickPosition = null; 
+
+    firstPointShapeUuid = snap ? findShapeUuidFromSnap(snap) : undefined;
     
     return;
   }
@@ -334,18 +414,20 @@ export function handleMeasureClick(
   if (!secondPoint) {
     if (!currentSnapPoint) return;
     const distance = firstPoint.distanceTo(currentSnapPoint);
-    const minThreshold = 0.1;
+    // const minThreshold = 0.1;
     
-    if (distance < minThreshold) {
+    if (distance < MIN_DIMENSION_LENGTH_M) {
       
       return;
     }
     
-    secondPoint = currentSnapPoint.clone();
-    secondClickPosition = currentSnapPoint.clone(); // ✅ Store second click position
+    secondPoint = clampToCanvasBounds(currentSnapPoint);
+    secondClickPosition = currentSnapPoint.clone(); 
     clearPreview();
     previewDimensionOffset = settings.defaultDimensionOffset;
     
+secondPointShapeUuid = snap ? findShapeUuidFromSnap(snap) : undefined;
+
     return;
   }
 
@@ -353,23 +435,34 @@ export function handleMeasureClick(
   if (firstPoint && secondPoint && secondClickPosition) {
     let finalOffset: number;
     
-    // ✅ Check if third click is near the second click position
+    
     const distanceToSecondClick = mouseWorldPos.distanceTo(secondClickPosition);
     
     if (distanceToSecondClick < SAME_POINT_TOLERANCE) {
-      // ✅ Clicked on same point = ZERO OFFSET!
+      
       finalOffset = 0;
       
     } else {
-      // Normal: use calculated offset from mouse position
-      finalOffset = previewDimensionOffset;
+      
+      finalOffset = clampDimensionOffset(previewDimensionOffset, 20);
       
     }
+
+    // const startShapeId = findShapeAtPoint(firstPoint);
+    // const endShapeId = findShapeAtPoint(secondPoint);
     
     const measurement = addMeasurement(
       firstPoint,
       secondPoint,
       finalOffset
+    );
+
+    attachMeasurementToShapes(
+      measurement.id,
+      firstPoint,
+      secondPoint,
+      firstPointShapeUuid,
+      secondPointShapeUuid
     );
     
     renderMeasurement(measurement, canvas);
@@ -380,6 +473,8 @@ export function handleMeasureClick(
     secondPoint = null;
     currentSnapPoint = null;
     secondClickPosition = null; 
+    firstPointShapeUuid = undefined;
+secondPointShapeUuid = undefined;
     previewDimensionOffset = newSettings.defaultDimensionOffset;
     clearPreview();
     
@@ -399,7 +494,7 @@ function updatePreviewLine(start: THREE.Vector3, end: THREE.Vector3) {
 
   const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
   const material = new THREE.LineDashedMaterial({
-    color: 0xffff00,
+    color: 0xFF8040,
     dashSize: 0.2,
     gapSize: 0.1,
     linewidth: 1
@@ -520,7 +615,9 @@ export function startMeasureMode() {
   firstPoint = null;
   secondPoint = null;
   currentSnapPoint = null;
-  secondClickPosition = null; // ✅ Reset
+  secondClickPosition = null; 
+  firstPointShapeUuid = undefined;
+  secondPointShapeUuid = undefined;
   previewDimensionOffset = settings.defaultDimensionOffset;
   clearPreview();
   
@@ -538,7 +635,9 @@ export function exitMeasureMode() {
   firstPoint = null;
   secondPoint = null;
   currentSnapPoint = null;
-  secondClickPosition = null; // ✅ Reset
+  secondClickPosition = null; 
+  firstPointShapeUuid = undefined;
+  secondPointShapeUuid = undefined;
   previewDimensionOffset = settings.defaultDimensionOffset;
   disposeSnapIndicator(scene);
   disposeEdgeIndicator(scene);

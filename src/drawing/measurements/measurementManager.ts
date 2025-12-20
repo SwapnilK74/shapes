@@ -12,8 +12,11 @@ export interface Measurement {
 
   dimensionLineColor: string;
   extensionLineColor: string;
+  
+  arrowColor: string;
   arrowSize: number;
   arrowStyle: 'filled' | 'open' | 'none';
+  
   extensionOverhang: number;
 
   labelBackgroundColor: string,
@@ -61,8 +64,11 @@ export function addMeasurement(
 
     dimensionLineColor: defaults.dimensionLineColor,
     extensionLineColor: defaults.extensionLineColor,
+
+    arrowColor: defaults.arrowColor,
     arrowSize: defaults.arrowSize,
     arrowStyle: defaults.arrowStyle,
+    
     extensionOverhang:defaults.extensionOverhang,
 
     labelBackgroundColor: defaults.labelBackgroundColor,
@@ -134,6 +140,7 @@ export function updateMeasurementLabelOffset(id: string, newLabelOffset: number)
 export function updateMeasurementColors(id: string, colors: {
   dimensionLineColor?: string;
   extensionLineColor?: string;
+  arrowColor?: string;
 }) {
   const measurement = measurements.find(m => m.id === id);
   if (measurement) {
@@ -142,6 +149,9 @@ export function updateMeasurementColors(id: string, colors: {
     }
     if (colors.extensionLineColor) {
       measurement.extensionLineColor = colors.extensionLineColor;
+    }
+    if (colors.arrowColor) {
+      measurement.arrowColor = colors.arrowColor;
     }
   }
 }
@@ -217,3 +227,39 @@ export function updateMeasurementCircleSettings(id: string, settings: {
     }
   }
 }
+
+/**
+ * Update measurement points (used when shapes are transformed)
+ * @param id - Measurement ID
+ * @param newStart - New start point position
+ * @param newEnd - New end point position
+ */
+export function updateMeasurementPoints(
+  id: string, 
+  newStart: THREE.Vector3, 
+  newEnd: THREE.Vector3
+) {
+  const measurement = measurements.find(m => m.id === id);
+  if (measurement) {
+    measurement.startPoint.copy(newStart);
+    measurement.endPoint.copy(newEnd);
+    measurement.distance = newStart.distanceTo(newEnd);
+  }
+}
+
+/**
+ * Get all measurement IDs
+ * Useful for tracking and updating multiple measurements
+ */
+export function getAllMeasurementIds(): string[] {
+  return measurements.map(m => m.id);
+}
+
+/**
+ * Check if a measurement exists
+ */
+export function measurementExists(id: string): boolean {
+  return measurements.some(m => m.id === id);
+}
+
+

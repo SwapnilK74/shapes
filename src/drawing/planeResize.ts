@@ -4,6 +4,8 @@ import { getSelectedObject } from './selection';
 import { updateSelectionHelpers } from './selectionHelpers';
 import { projectMouseToPlaneForDom } from './sharedPointer';
 import { refreshDimensionsForObject } from './dimensions/dimensionUpdater';
+import { updateMeasurementsForShape } from './measurements/trackMeasurement';
+
 
 // --- STATE VARIABLES ---
 let activePlaneHandleRole: 'plane-right' | 'plane-top' | null = null;
@@ -158,6 +160,8 @@ export function updatePlaneResize(
     );
   }
 
+  
+ updateMeasurementsForShape(mesh.uuid);
   updateSelectionHelpers();
   refreshDimensionsForObject(mesh);
 }

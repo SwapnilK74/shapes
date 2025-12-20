@@ -17,7 +17,7 @@ export function createPlaneMesh(
     color: hexToNumber(defaultFillColor),
     side: THREE.DoubleSide,
     transparent: true,
-    opacity: 0.6
+    opacity: 0.8
   });
   
   const mesh = new THREE.Mesh(geometry, material);

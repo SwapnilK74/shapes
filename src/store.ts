@@ -1,6 +1,8 @@
 // src/store.ts
 import { create } from 'zustand';
 
+export type UnitSystem = 'metric' | 'imperial';
+
 interface StoreState {
   // Shape settings
   defaultFillColor: string;
@@ -9,6 +11,9 @@ interface StoreState {
   // Selection state
   selectedShapeId: string | null;
   activeMeasurementId: string | null;
+
+  unitSystem : UnitSystem;
+  
   
   // Measurement settings
   measurementSettings: {
@@ -23,6 +28,7 @@ interface StoreState {
     extensionLineWidth: number;
     
     // Arrow settings
+    arrowColor: string;
     arrowSize: number;
     arrowStyle: 'filled' | 'open' | 'none';
     
@@ -49,6 +55,9 @@ interface StoreState {
     defaultDimensionOffset: number;
   };
   
+// Unit System
+setUnitSystem: (unit: UnitSystem) => void;
+
   // Actions - Shape
   setDefaultFillColor: (color: string) => void;
   setDefaultOutlineColor: (color: string) => void;
@@ -60,14 +69,20 @@ interface StoreState {
   // Actions - Measurement
   setMeasurementDimensionLineColor: (color: string) => void;
   setMeasurementExtensionLineColor: (color: string) => void;
+  
+  setMeasurementArrowColor: (color: string) => void;
   setMeasurementArrowSize: (size: number) => void;
   setMeasurementArrowStyle: (style: 'filled' | 'open' | 'none') => void;
+  
   setMeasurementExtensionOverhang: (overhang: number) => void;
+  
   setMeasurementLabelFontSize: (size: number) => void;
-  setMeasurementDefaultOffset: (offset: number) => void;
   setMeasurementLabelBackgroundOpacity: (opacity: number) => void;
  setMeasurementLabelBackgroundColor: (color: string) => void;
   setMeasurementLabelTextColor: (color: string) => void;
+  
+  setMeasurementDefaultOffset: (offset: number) => void;
+
   
   
   // Actions - Circle
@@ -77,9 +92,13 @@ interface StoreState {
 }
 
 export const useStore = create<StoreState>((set) => ({
+
+  //Default Unit metric
+  unitSystem: 'metric',
+
   // Shape settings
-  defaultFillColor: '#00ff88',
-  defaultOutlineColor: '#ffffff',
+  defaultFillColor: '#6FA4AF',
+  defaultOutlineColor: '#1A2A4F',
   
   // Selection state
   selectedShapeId: null,
@@ -95,6 +114,7 @@ export const useStore = create<StoreState>((set) => ({
     dimensionLineWidth: 3,
     extensionLineWidth: 2,
     
+    arrowColor: '#FFBF78',
     arrowSize: 0.15,
     arrowStyle: 'filled',
     
@@ -118,6 +138,10 @@ export const useStore = create<StoreState>((set) => ({
     defaultDimensionOffset: 0.2,
   },
   
+
+  // unit system action
+  setUnitSystem: (unit) => set({ unitSystem: unit}),
+
   // Shape actions
   setDefaultFillColor: (color) => set({ defaultFillColor: color }),
   setDefaultOutlineColor: (color) => set({ defaultOutlineColor: color }),
@@ -143,6 +167,11 @@ export const useStore = create<StoreState>((set) => ({
         extensionLineColor: color,
         extensionLineColorSelected: color 
       }
+    })),
+
+      setMeasurementArrowColor: (color) =>
+    set((state) => ({
+      measurementSettings: { ...state.measurementSettings, arrowColor: color }
     })),
   
   setMeasurementArrowSize: (size) =>

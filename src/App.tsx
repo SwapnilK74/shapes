@@ -15,15 +15,48 @@ import type { UnitSystem } from './drawing/dimensions/dimensionManager';
 import { refreshDimensionsForObject, setDimensionsEnabled } from './drawing/dimensions/dimensionUpdater';
 import { getShapeWidthOffset, setShapeWidthOffset, getShapeHeightOffset, setShapeHeightOffset } from './drawing/dimensions/dimensionOffset';
 import { startMeasureMode, exitMeasureMode, setSnapToPoints, setSnapToEdges, setAllowFreeMeasurement } from './drawing/measurements/measureTool';
-import { initializeMeasurementRenderer, updateAllMeasurementLabels } from './drawing/measurements/measurementRenderer';
-import { deselectMeasurement } from './drawing/measurements/measurementInteraction';
+import { initializeMeasurementRenderer, updateAllMeasurementLabels,toggleAllMeasurementsVisibility  } from './drawing/measurements/measurementRenderer';
+import { deleteMeasurementById, deselectMeasurement } from './drawing/measurements/measurementInteraction';
 import MeasurementSettings from './components/MeasurementSettings';
 import { useStore } from './store';
 import * as THREE from 'three';
 import { deleteSelectedShape } from './drawing/deleteShape';
+import { setAlignmentEnabled, isAlignmentEnabled } from './drawing/dragSelection';
+
 
 import './index.css';
 import './drawing/dimensions/dimensionStyles.css';
+
+function UnitSystemToggle() {
+  const unitSystem = useStore((state) => state.unitSystem);
+  const setUnitSystemStore = useStore((state) => state.setUnitSystem);
+
+  const handleToggle = () => {
+    const newUnit = unitSystem === 'metric' ? 'imperial' : 'metric';
+    setUnitSystemStore(newUnit);
+  }
+
+  return (
+    <div style={{ padding: '8px' }}>
+      <label>Units: </label>
+      <button
+        onClick={handleToggle}
+        className='tool-button'
+        style={{
+          padding: '4px 12px',
+          borderRadius: '4px',
+          background: unitSystem === 'metric' ? '#4a9eff' : '#ff8844',
+          color: 'white',
+          border: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        {unitSystem === 'metric' ? 'Meters (m)' : 'Feet/Inches (ft)'}
+      </button>
+    </div>
+  );
+}
+
 
 // Helper function to check if object is a line
 function isLineObject(obj: THREE.Object3D): obj is THREE.Line {
@@ -42,11 +75,14 @@ const App: React.FC = () => {
 
   const [activeTool, setActiveTool] = useState<ShapeTool>('select');
   const [currentUnit, setCurrentUnit] = useState<UnitSystem>('metric');
-  const [showDimensions, setShowDimensions] = useState(true);
+  const [showDimensions, setShowDimensions] = useState(false);
   const [selectedWidthOffset, setSelectedWidthOffset] = useState<number>(0.5);
   const [selectedHeightOffset, setSelectedHeightOffset] = useState<number>(0.5);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [measureModeActive, setMeasureModeActive] = useState(false);
+const [measurementsVisible, setMeasurementsVisible] = useState(true);
+const [alignmentEnabledState, setAlignmentEnabledState] = useState<boolean>(true);
+
 
   // Snap mode states
   const [snapPointsEnabled, setSnapPointsEnabled] = useState(true);
@@ -70,8 +106,20 @@ const App: React.FC = () => {
     initializeDimensionRenderer(wrapper);
     initializeMeasurementRenderer(wrapper);
 
+    setDimensionsEnabled(false);
+
     const controls = createControls(camera, renderer.domElement);
     attachDrawingEvents(renderer.domElement);
+
+  //     const handleLabelDblClick = (e: MouseEvent) => {
+  //   // delegate to measurementInteraction helper
+  //   import('./drawing/measurements/measurementInteraction').then(
+  //     ({ handleLabelDoubleClick }) => {
+  //       handleLabelDoubleClick(e, wrapper);
+  //     }
+  //   );
+  // };
+  // wrapper.addEventListener('dblclick', handleLabelDblClick);
 
     const onResize = () => {
       const r = wrapper.getBoundingClientRect();
@@ -96,6 +144,7 @@ const App: React.FC = () => {
     return () => {
       running = false;
       window.removeEventListener('resize', onResize);
+      // wrapper.removeEventListener('dblclick', handleLabelDblClick);
       if (wrapper.contains(canvas)) wrapper.removeChild(canvas);
     };
   }, []);
@@ -125,16 +174,21 @@ const App: React.FC = () => {
     }
   }, [selectedObjectId, showDimensions]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Delete' || e.key === 'Backspace') {
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      const selectedShape = getSelectedObject();
+      if (selectedShape) {
         deleteSelectedShape();
+      } else if (activeMeasurementId) {          
+        deleteMeasurementById(activeMeasurementId);
       }
-    };
+    }
+  };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [activeMeasurementId]);
 
   // Update selected shape colors when selection changes
   useEffect(() => {
@@ -179,6 +233,13 @@ const App: React.FC = () => {
     setActiveTool(tool);
     setShapeTool(tool);
   };
+
+  const handleMeasurementsVisibilityToggle = () => {
+  const newState = !measurementsVisible;
+  setMeasurementsVisible(newState);
+  toggleAllMeasurementsVisibility(newState);
+};
+
 
   const handleMeasureToggle = () => {
     if (measureModeActive) {
@@ -284,6 +345,12 @@ const App: React.FC = () => {
     setAllowFreeMeasurement(newState);
   };
 
+  const handleAlignmentToggle = () => {
+  const newState = !alignmentEnabledState;
+  setAlignmentEnabledState(newState);
+  setAlignmentEnabled(newState);
+};
+
   const hasSelectedObject = selectedObjectId !== null;
   const selectedObject = getSelectedObject();
   const isSelectedLine = selectedObject ? isLineObject(selectedObject) : false;
@@ -344,6 +411,17 @@ const App: React.FC = () => {
           </button>
         )}
 
+        <h3 style={{ marginTop: 16, marginBottom: 4 }}>Magic Alignment</h3>
+<button
+  className={'tool-button' + (alignmentEnabledState ? ' tool-button--active' : '')}
+  onClick={handleAlignmentToggle}
+  style={{ width: '100%', marginTop: 4 }}
+>
+  {alignmentEnabledState ? 'Alignment: On' : 'Alignment: Off'}
+</button>
+
+
+<h3 style={{ marginTop: 16, marginBottom: 4 }}>Measure Tool</h3>
         <button
           className={'tool-button' + (measureModeActive ? ' tool-button--active' : '')}
           onClick={handleMeasureToggle}
@@ -351,6 +429,16 @@ const App: React.FC = () => {
         >
           {measureModeActive ? 'Exit Measure' : 'Measure'}
         </button>
+
+        <button
+  className={'tool-button' + (measurementsVisible ? ' tool-button--active' : '')}
+  onClick={handleMeasurementsVisibilityToggle}
+  style={{ width: '100%', marginTop: 4 }}
+>
+  {measurementsVisible ? 'Hide Measurements' : 'Show Measurements'}
+</button>
+
+
 
         {measureModeActive && (
           <div style={{ marginTop: 8 }}>
@@ -381,7 +469,7 @@ const App: React.FC = () => {
             </button>
           </div>
         )}
-
+{/* 
         <h3 style={{ marginTop: 16, marginBottom: 4 }}>Dimensions</h3>
         <button
           className={'tool-button' + (showDimensions ? ' tool-button--active' : '')}
@@ -441,6 +529,7 @@ const App: React.FC = () => {
             </button>
           </>
         )}
+         */}
 
         {/* Show DEFAULT colors when NO shape is selected */}
         {!hasSelectedObject && (
@@ -511,6 +600,9 @@ const App: React.FC = () => {
             Snap to grid
           </label>
         </div>
+
+ <UnitSystemToggle />
+
       </div>
     </div>
   );

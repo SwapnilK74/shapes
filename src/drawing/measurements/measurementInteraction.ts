@@ -7,17 +7,20 @@ import {
   getActiveMeasurement,
   updateMeasurementOffset,
   updateMeasurementLabelOffset,
-  getAllMeasurements
+  getAllMeasurements,
+  removeMeasurement,
+  // updateMeasurementDistance 
 } from './measurementManager';
 import { projectMouseToPlaneForDom } from '../sharedPointer';
 import { 
-  
+  removeMeasurementVisuals,
   updateMeasurementPositions,
   setMeasurementSelected,
   updateMeasurementColors,
   updateMeasurementGeometry
 } from './measurementRenderer';
-import { calculatePerpendicularDirection } from './measurementCalculator';
+import { calculatePerpendicularDirection, clampDimensionOffset } from './measurementCalculator';
+import { detachMeasurement } from './trackMeasurement';
 import { useStore } from '../../store';
 
 // ✅ Module-level: Temporary drag state (NOT in Zustand)
@@ -54,6 +57,21 @@ export function setActiveMeasurementId(id: string | null) {
   } else {
     setActiveMeasurement(null);
   }
+}
+
+export function deleteMeasurementById(measurementId: string) {
+  const activeId = getActiveMeasurementId();
+
+  // Clear selection if this one was active
+  if (activeId === measurementId) {
+    setMeasurementSelected(measurementId, false);
+    setActiveMeasurement(null);
+    useStore.getState().setActiveMeasurementId(null);
+  }
+
+  detachMeasurement(measurementId);
+  removeMeasurement(measurementId);
+  removeMeasurementVisuals(measurementId);
 }
 
 /**
@@ -153,7 +171,8 @@ export function updateLabelDrag(
   const parallelMovement = mouseMovement.dot(lineDirection);
   const perpendicularMovement = mouseMovement.dot(perpendicularDirection);
 
-  const newDimensionOffset = initialDimensionOffset + perpendicularMovement;
+  const rawOffset = initialDimensionOffset + perpendicularMovement;
+  const newDimensionOffset = clampDimensionOffset(rawOffset, 20);
   updateMeasurementOffset(activeMeasurement.id, newDimensionOffset);
 
   const lineLength = startPoint.distanceTo(endPoint);
@@ -237,3 +256,67 @@ export function setActiveMeasurementOffset(offset: number) {
   updateMeasurementOffset(m.id, offset);
   updateMeasurementPositions(m.id, m);
 }
+
+// export function handleLabelDoubleClick(
+//   event: MouseEvent,
+//   domElement: HTMLElement
+// ) {
+//   const measurementId = findLabelAtMousePosition(event, domElement);
+//   if (!measurementId) return;
+
+//   const labelContainer = document.getElementById('measurement-labels');
+//   if (!labelContainer) return;
+
+//   const labelElement = labelContainer.querySelector(
+//     `[data-measurement-id="${measurementId}"]`
+//   ) as HTMLElement | null;
+//   if (!labelElement) return;
+
+//   const currentText = labelElement.textContent || '';
+
+//   // Create inline input over the label
+//   const input = document.createElement('input');
+//   input.type = 'text';
+//   input.value = extractNumericPart(currentText);
+//   input.style.position = 'absolute';
+//   input.style.left = labelElement.style.left;
+//   input.style.top = labelElement.style.top;
+//   input.style.transform = 'translate(-50%, -50%)';
+//   input.style.zIndex = '999';
+//   input.style.padding = '2px 4px';
+//   input.style.fontSize = labelElement.style.fontSize || '12px';
+
+//   labelElement.style.visibility = 'hidden';
+//   labelContainer.appendChild(input);
+//   input.focus();
+//   input.select();
+
+//   const commit = () => {
+//     const raw = input.value.trim();
+//     input.remove();
+//     labelElement.style.visibility = 'visible';
+
+//     if (!raw) return;
+//     const newMeters = convertDisplayToMeters(raw);
+//     if (!newMeters || newMeters <= 0) return;
+
+//     updateMeasurementDistance(measurementId, newMeters);
+//   };
+
+//   input.addEventListener('blur', commit);
+//   input.addEventListener('keydown', (e) => {
+//     if (e.key === 'Enter') {
+//       e.preventDefault();
+//       commit();
+//     }
+//     if (e.key === 'Escape') {
+//       input.remove();
+//       labelElement.style.visibility = 'visible';
+//     }
+//   });
+// }
+
+// function extractNumericPart(text: string): string {
+//   const match = text.match(/[\d.]+/);
+//   return match ? match[0] : '';
+// }

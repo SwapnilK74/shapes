@@ -6,7 +6,7 @@ import {
   setDefaultDimensionOffset,
 } from '../drawing/measurements/measurementSettings';
 import { 
- 
+ deleteMeasurementById,
   refreshAllMeasurements, 
 } from '../drawing/measurements/measurementInteraction';
 import { 
@@ -15,7 +15,8 @@ import {
   updateMeasurementArrowSettings,
   updateMeasurementExtensionOverhang,
   updateMeasurementLabelSettings,
-  updateMeasurementCircleSettings
+  updateMeasurementCircleSettings,
+  getAllMeasurements
 } from '../drawing/measurements/measurementManager';
 
 import { 
@@ -44,6 +45,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
   const defaultLabelBgOpacity = useStore((state) => state.measurementSettings.labelBackgroundOpacity);
   const defaultLabelTextColor = useStore((state) => state.measurementSettings.labelTextColor);
   const defaultLabelFontSize = useStore((state) => state.measurementSettings.labelFontSize);
+  const defaultArrowColor = useStore((state) => state.measurementSettings.arrowColor);
   const defaultArrowSize = useStore((state) => state.measurementSettings.arrowSize);
   const defaultExtensionOverhang = useStore((state) => state.measurementSettings.extensionOverhang);
   const defaultDimensionOffset = useStore((state) => state.measurementSettings.defaultDimensionOffset);
@@ -54,6 +56,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
 
   const setMeasurementDimensionLineColor = useStore((state) => state.setMeasurementDimensionLineColor);
   const setMeasurementExtensionLineColor = useStore((state) => state.setMeasurementExtensionLineColor);
+  const setMeasurementArrowColor = useStore((state) => state.setMeasurementArrowColor);
   const setMeasurementArrowSizeStore = useStore((state) => state.setMeasurementArrowSize);
   const setMeasurementExtensionOverhangStore = useStore((state) => state.setMeasurementExtensionOverhang);
   const setMeasurementLabelTextColor = useStore((state) => state.setMeasurementLabelTextColor);
@@ -61,12 +64,13 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
   const setMeasurementLabelFontSize = useStore((state) => state.setMeasurementLabelFontSize);
     const setMeasurementCircleColor = useStore((state) => state.setMeasurementCircleColor); 
   const setMeasurementCircleSize = useStore((state) => state.setMeasurementCircleSize); 
-  // const setMeasurementShowCircles = useStore((state) => state.setMeasurementShowCircles); 
+   const setMeasurementShowCircles = useStore((state) => state.setMeasurementShowCircles); 
  const setMeasurementLabelBgOpacity = useStore((state) => state.setMeasurementLabelBackgroundOpacity);
 
   // State for all settings
   const [dimensionLineColor, setDimensionLineColorState] = useState(defaultDimensionColor);
   const [extensionLineColor, setExtensionLineColorState] = useState(defaultExtensionColor);
+  const [arrowColor, setArrowColorState] = useState(defaultArrowColor);
   const [arrowSizeValue, setArrowSizeValue] = useState(defaultArrowSize);
   const [extensionOverhangValue, setExtensionOverhangValue] = useState(defaultExtensionOverhang);
   const [labelBgColor, setLabelBgColorState] = useState(defaultLabelBgColor);
@@ -85,6 +89,7 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
     if (activeMeasurement) {
       setDimensionLineColorState(activeMeasurement.dimensionLineColor);
       setExtensionLineColorState(activeMeasurement.extensionLineColor);
+      setArrowColorState(activeMeasurement.arrowColor);
       setArrowSizeValue(activeMeasurement.arrowSize);
       setExtensionOverhangValue(activeMeasurement.extensionOverhang);
       setLabelBgColorState(activeMeasurement.labelBackgroundColor);
@@ -118,6 +123,15 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
     updateVisualColors(activeMeasurement.id);
     refreshAllMeasurements(); 
   };
+
+  const handleArrowColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    setArrowColorState(color);
+    updateMeasurementColors(activeMeasurement.id, { arrowColor: color});
+    setMeasurementArrowColor(color);
+    updateVisualColors(activeMeasurement.id);
+    refreshAllMeasurements();
+  }
 
   const handleArrowSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const size = parseFloat(e.target.value);
@@ -219,12 +233,55 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
     refreshAllMeasurements();
   };
 
+ const handleDeleteClick = () => {
+  if (!activeMeasurement) return;
+  deleteMeasurementById(activeMeasurement.id);
+  onClose();
+};
+
+
+const handleToggleAllCircles = () => {
+  const newShow = !showCircles;
+  setShowCirclesState(newShow);
+  
+  // Update the global default in store
+  setMeasurementShowCircles(newShow); // ✅ Now this line uses the hook
+  
+  // Get all measurements from measurementManager instead of store
+  
+  const allMeasurements = getAllMeasurements();
+  
+  // Update ALL measurements at once
+  allMeasurements.forEach((measurement: any) => {
+    updateMeasurementCircleSettings(measurement.id, { showCircles: newShow });
+    updateMeasurementCircleVisibility(measurement.id);
+  });
+  
+  refreshAllMeasurements();
+};
+
 
 
   return (
     <div className="measurement-settings-panel">
-      <div className="measurement-settings-header">
-        <h3>Measurement Settings</h3>
+      <div className="measurement-settings-header" style={{display: 'flex',
+        alignItems: 'center', justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8', justifyContent:'space-between'}}>
+          <span style={{ fontWeight: 'bold'}}>Measurement Settings</span>
+        <button onClick={handleDeleteClick}
+        style={{
+          padding: '2px 6px',
+          fontSize: 10,
+          borderRadius:3,
+          border: 'node',
+          backgroundColor: '#d32f2f',
+          color: 'white',
+          cursor: 'pointer'
+        }}
+        > Del</button>
+        </div>
+        
         <button className="close-button" onClick={onClose}>×</button>
       </div>
 
@@ -274,6 +331,14 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
         {/* ARROWS */}
         <div className="setting-section">
           <h4>Arrows</h4>
+          <div className='setting-group'>
+            <label>Color</label>
+            <input
+            type="color"
+            value={arrowColor}
+            onChange={handleArrowColorChange}
+            />
+          </div>
           <div className="setting-group">
             <label>Size</label>
             <input
@@ -290,52 +355,77 @@ const MeasurementSettings: React.FC<MeasurementSettingsProps> = ({ isVisible, on
 
         <div className="section-divider" />
 
-        <div className="section-divider" />
+<div className="setting-section">
+  <h4>Point Circles</h4>
+  
+  {/* Global Toggle for ALL measurements */}
+  <div className="setting-group">
+    <label>Show All Circles</label>
+    <button
+      onClick={handleToggleAllCircles}
+      style={{
+        padding: '6px 16px',
+        borderRadius: '4px',
+        border: '1px solid #666',
+        background: showCircles ? '#4a9eff' : '#2a2a2a',
+        color: 'white',
+        cursor: 'pointer',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        width: '100%'
+      }}
+    >
+      {showCircles ? 'Hide All Circles' : 'Show All Circles'}
+    </button>
+  </div>
 
-        <div className="setting-section">
-          <h4>Point Circles</h4>
-          <div className="setting-group">
-            <label>Show Circles</label>
-            <button
-              onClick={handleShowCirclesToggle}
-              style={{
-                padding: '4px 12px',
-                borderRadius: '4px',
-                border: '1px solid #666',
-                background: showCircles ? '#4a9eff' : '#2a2a2a',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
-            >
-              {showCircles ? 'ON' : 'OFF'}
-            </button>
-          </div>
-          {showCircles && (
-            <>
-              <div className="setting-group">
-                <label>Color</label>
-                <input
-                  type="color"
-                  value={circleColor}
-                  onChange={handleCircleColorChange}
-                />
-              </div>
-              <div className="setting-group">
-                <label>Size</label>
-                <input
-                  type="range"
-                  value={circleSize}
-                  onChange={handleCircleSizeChange}
-                  step="0.01"
-                  min="0.05"
-                  max="0.2"
-                />
-                <span className="range-value">{circleSize.toFixed(2)}</span>
-              </div>
-            </>
-          )}
-        </div>
+  <div className="section-divider" style={{ margin: '8px 0' }} />
+
+  {/* Individual measurement settings */}
+  <div className="setting-group">
+    <label>This Measurement</label>
+    <button
+      onClick={handleShowCirclesToggle}
+      style={{
+        padding: '4px 12px',
+        borderRadius: '4px',
+        border: '1px solid #666',
+        background: showCircles ? '#4a9eff' : '#2a2a2a',
+        color: 'white',
+        cursor: 'pointer',
+        fontSize: '12px'
+      }}
+    >
+      {showCircles ? 'ON' : 'OFF'}
+    </button>
+  </div>
+  
+  {showCircles && (
+    <>
+      <div className="setting-group">
+        <label>Color</label>
+        <input
+          type="color"
+          value={circleColor}
+          onChange={handleCircleColorChange}
+        />
+      </div>
+      <div className="setting-group">
+        <label>Size</label>
+        <input
+          type="range"
+          value={circleSize}
+          onChange={handleCircleSizeChange}
+          step="0.01"
+          min="0.05"
+          max="0.2"
+        />
+        <span className="range-value">{circleSize.toFixed(2)}</span>
+      </div>
+    </>
+  )}
+</div>
+
 
         <div className="section-divider" />
 

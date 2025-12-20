@@ -181,11 +181,11 @@ function createArrows(
 export function createDimensionLine(
   startPoint: THREE.Vector3,
   endPoint: THREE.Vector3,
-  color: number = 0xffffff,
+  color: number = 0x703B3B,
   arrowStyle?: ArrowStyle
 ): DimensionLine {
   // Determine line thickness based on color
-  const lineWidth = color === 0xffffff ? 3 : 3; 
+  const lineWidth = color === 0x703B3B ? 3 : 3; 
 
   // Create thick line using Line2
   const lineGeometry = new LineGeometry();
@@ -211,7 +211,7 @@ export function createDimensionLine(
   // Create arrows ONLY for white dimension lines (not gray extension lines)
   const arrowObjects: THREE.Mesh[] = [];
   
-  if (color === 0xffffff && arrowStyle) {
+  if (color === 0x703B3B && arrowStyle) {
     const arrows = createArrows(startPoint, endPoint, color, arrowStyle);
     
     // Add arrows to scene

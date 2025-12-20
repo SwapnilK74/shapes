@@ -15,7 +15,7 @@ export function createLineResizeHandles(line: THREE.Line): THREE.Mesh[] {
   const handleSize = 0.5;
   const handleGeometry = new THREE.BoxGeometry(handleSize, handleSize, 0.01);
   const handleMaterial = new THREE.MeshBasicMaterial({ 
-    color: 0xF5E7C6,
+    color: 0xE4004B,
     transparent: true,
     opacity: 0.4
   });
@@ -114,8 +114,8 @@ export function createShapeResizeHandles(
     handleHeight,
     handleDepth
   );
-  const edgeHandleMaterial = new THREE.MeshBasicMaterial({ color: 0xFAF3E1 });
-
+  const edgeHandleMaterial = new THREE.MeshBasicMaterial({ color: 0xE4004B });
+  
   // Determine shape type
   const isCircle = geometry instanceof THREE.CircleGeometry;
   const isTriangle = 

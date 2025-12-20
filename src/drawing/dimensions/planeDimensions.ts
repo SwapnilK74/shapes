@@ -64,7 +64,7 @@ export function createPlaneDimensions(planeMesh: THREE.Mesh) {
   );
 
   
-  createDimensionLine(widthLineStart, widthLineEnd, 0xffffff, arrowStyle);
+  createDimensionLine(widthLineStart, widthLineEnd, 0x703B3B, arrowStyle);
 
   const widthLabelPosition = new THREE.Vector3()
     .addVectors(widthLineStart, widthLineEnd)
@@ -93,7 +93,7 @@ export function createPlaneDimensions(planeMesh: THREE.Mesh) {
   );
 
  
-  createDimensionLine(heightLineStart, heightLineEnd, 0xffffff, arrowStyle);
+  createDimensionLine(heightLineStart, heightLineEnd, 0x703B3B, arrowStyle);
 
   const heightLabelPosition = new THREE.Vector3()
     .addVectors(heightLineStart, heightLineEnd)

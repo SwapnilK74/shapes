@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { scene } from '../core/scene';
 import { getSelectedObject, clearSelection } from './selection';
+import { removeMeasurementsForShape } from './measurements/trackMeasurement';
 
 export function deleteSelectedShape(): boolean {
   const selectedObject = getSelectedObject();
@@ -9,6 +10,8 @@ export function deleteSelectedShape(): boolean {
   if (!selectedObject) {
     return false;
   }
+
+  removeMeasurementsForShape(selectedObject.uuid);
 
   // Remove from scene
   scene.remove(selectedObject);

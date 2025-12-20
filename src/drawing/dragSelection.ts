@@ -42,6 +42,8 @@ import {
 } from './measurements/measureTool';
 import { isMeasureMode } from './measurements/measurementManager';
 
+import { updateMeasurementsForShape } from './measurements/trackMeasurement';
+
 import {
   findLabelAtMousePosition,
   beginLabelDrag,
@@ -51,6 +53,19 @@ import {
   deselectMeasurement
 } from './measurements/measurementInteraction';
 
+// ✅ NEW: Import alignment system
+import { 
+  findAlignmentCandidates, 
+  getBestAlignments 
+} from './alignment/alignmentDetection';
+import { 
+  updateAlignmentGuides, 
+  clearAlignmentGuides 
+} from './alignment/alignmentGuides';
+import { 
+  applyAlignmentSnap 
+} from './alignment/alignmentSnapping';
+
 const raycaster = new THREE.Raycaster();
 const normalizedDeviceMouse = new THREE.Vector2();
 
@@ -58,7 +73,11 @@ let isDraggingSelectedObject = false;
 const selectedObjectOffset = new THREE.Vector3();
 
 let activeResizeHandle: THREE.Object3D | null = null;
-let activeResizeKind: 'plane' | 'circle' | 'triangle' | 'line' | 'rotate-plane' | 'rotate-circle' | null = null; // ← ADD 'rotate'
+let activeResizeKind: 'plane' | 'circle' | 'triangle' | 'line' | 'rotate-plane' | 'rotate-circle' | null = null;
+
+// ✅ NEW: Alignment settings
+let alignmentEnabled = true; // Toggle this to enable/disable alignment
+const alignmentSnapThreshold = 0.5; // Distance threshold for snapping
 
 export function beginSelectionDrag(event: MouseEvent, domElement: HTMLElement) {
   const labelMeasurementId = findLabelAtMousePosition(event, domElement);
@@ -80,41 +99,32 @@ export function beginSelectionDrag(event: MouseEvent, domElement: HTMLElement) {
 
   const intersections = raycaster.intersectObjects(scene.children, false);
 
-  // ← ADD ROTATION HANDLE CHECK FIRST (before resize handles)
+  // Check rotation handle first
   const rotateHandleHit = intersections.find(
     (intersection) => (intersection.object as any).userData?.isRotateHandle
   );
 
- if (rotateHandleHit) {
-  activeResizeHandle = rotateHandleHit.object;
-  isDraggingSelectedObject = false;
+  if (rotateHandleHit) {
+    activeResizeHandle = rotateHandleHit.object;
+    isDraggingSelectedObject = false;
 
-  // ← NEW: Determine which shape is being rotated
-  const mesh = getSelectedObject();
-  if (!mesh) return;
+    const mesh = getSelectedObject();
+    if (!mesh) return;
 
-  const isCircle = 
-    mesh instanceof THREE.Mesh &&
-    mesh.geometry instanceof THREE.CircleGeometry;
+    const isCircle = 
+      mesh instanceof THREE.Mesh &&
+      mesh.geometry instanceof THREE.CircleGeometry;
 
-  // const isTriangle =
-  //   mesh instanceof THREE.Mesh &&
-  //   mesh.geometry instanceof THREE.BufferGeometry &&
-  //   mesh.geometry.getAttribute('position')?.count === 3;
+    if (isCircle) {
+      activeResizeKind = 'rotate-circle';
+      beginCircleRotate(activeResizeHandle);
+    } else {
+      activeResizeKind = 'rotate-plane';
+      beginPlaneRotate(activeResizeHandle);
+    }
 
-  if (isCircle) {
-    activeResizeKind = 'rotate-circle';
-    beginCircleRotate(activeResizeHandle);
-  // } else if (isTriangle) {
-  //   activeResizeKind = 'rotate-triangle';
-  //   beginTriangleRotate(activeResizeHandle);
-  } else {
-    activeResizeKind = 'rotate-plane';
-    beginPlaneRotate(activeResizeHandle);
+    return;
   }
-
-  return;
-}
 
   // Check for resize handles
   const handleHit = intersections.find(
@@ -154,8 +164,9 @@ export function beginSelectionDrag(event: MouseEvent, domElement: HTMLElement) {
       intersection.object.name !== 'selectionOutline' &&
       !(intersection.object as any).isUiOnly &&
       !(intersection.object as any).userData?.isResizeHandle &&
-      !(intersection.object as any).userData?.isRotateHandle && // ← ADD THIS
-      !(intersection.object as any).isMeasurementHitZone
+      !(intersection.object as any).userData?.isRotateHandle &&
+      !(intersection.object as any).isMeasurementHitZone &&
+      !(intersection.object as any).isAlignmentGuide // ✅ NEW: Ignore guide lines
   );
 
   if (!hit) {
@@ -163,6 +174,8 @@ export function beginSelectionDrag(event: MouseEvent, domElement: HTMLElement) {
     isDraggingSelectedObject = false;
     activeResizeHandle = null;
     activeResizeKind = null;
+    // ✅ NEW: Clear guides when deselecting
+    clearAlignmentGuides(scene);
     return;
   }
 
@@ -206,13 +219,11 @@ export function updateSelectionDrag(event: MouseEvent, domElement: HTMLElement) 
       updateTriangleResize(event, domElement);
     } else if (activeResizeKind === 'line') {
       updateLineResize(event, domElement);
-  } else if (activeResizeKind === 'rotate-plane') {     
-    updatePlaneRotate(event, domElement);
-  } else if (activeResizeKind === 'rotate-circle') {    
-    updateCircleRotate(event, domElement);
-  // } else if (activeResizeKind === 'rotate-triangle') {  
-  //   updateTriangleRotate(event, domElement);
-  }
+    } else if (activeResizeKind === 'rotate-plane') {     
+      updatePlaneRotate(event, domElement);
+    } else if (activeResizeKind === 'rotate-circle') {    
+      updateCircleRotate(event, domElement);
+    }
     return;
   }
 
@@ -225,17 +236,71 @@ export function updateSelectionDrag(event: MouseEvent, domElement: HTMLElement) 
   pointOnPlane.add(selectedObjectOffset);
 
   const selectedObject = getSelectedObject();
-  if (!selectedObject) return;
+  if (!selectedObject || !(selectedObject instanceof THREE.Mesh)) return;
 
+  // ✅ NEW: Apply alignment snapping if enabled
+  let finalPosition = pointOnPlane.clone();
+
+  if (alignmentEnabled) {
+    // Get all other meshes in scene
+    const allShapes: THREE.Mesh[] = [];
+    scene.traverse((object) => {
+      if (object instanceof THREE.Mesh && 
+          object.uuid !== selectedObject.uuid &&
+          (object.userData.geometryType === 'plane' ||
+           object.userData.geometryType === 'circle' ||
+           object.userData.geometryType === 'triangle')) {
+        allShapes.push(object);
+      }
+    });
+
+    // Temporarily set position to check alignments
+    const originalPosition = selectedObject.position.clone();
+    selectedObject.position.copy(finalPosition);
+
+    // Find alignment candidates
+    const candidates = findAlignmentCandidates(
+      selectedObject,
+      allShapes,
+      alignmentSnapThreshold
+    );
+
+    // Get best alignments (one horizontal, one vertical max)
+    const { horizontal, vertical } = getBestAlignments(candidates);
+
+    // Apply snapping
+    if (horizontal || vertical) {
+      finalPosition = applyAlignmentSnap(
+        selectedObject,
+        finalPosition,
+        horizontal,
+        vertical
+      );
+    }
+
+    // Update guide lines
+    updateAlignmentGuides(scene, selectedObject, horizontal, vertical);
+
+    // Restore original position before final update
+    selectedObject.position.copy(originalPosition);
+  } else {
+    // Clear guides if alignment is disabled
+    clearAlignmentGuides(scene);
+  }
+
+  // Apply final position
   selectedObject.position.set(
-    pointOnPlane.x,
-    pointOnPlane.y,
+    finalPosition.x,
+    finalPosition.y,
     selectedObject.position.z
   );
 
-  updateSelectionHelpers(); // ← FIXED FUNCTION NAME
+  // Update measurements
+  updateMeasurementsForShape(selectedObject.uuid);
 
-  refreshDimensionsForObject(selectedObject);
+  updateSelectionHelpers();
+
+    refreshDimensionsForObject(selectedObject);
 }
 
 export function endSelectionDrag() {
@@ -243,14 +308,34 @@ export function endSelectionDrag() {
 
   isDraggingSelectedObject = false;
 
+  const selectedObject = getSelectedObject();
+
   if (activeResizeKind === 'plane') endPlaneResize();
   if (activeResizeKind === 'circle') endCircleResize();
   if (activeResizeKind === 'triangle') endTriangleResize();
   if (activeResizeKind === 'line') endLineResize();
-if (activeResizeKind === 'rotate-plane') endPlaneRotate();         
-if (activeResizeKind === 'rotate-circle') endCircleRotate();       
-// if (activeResizeKind === 'rotate-triangle') endTriangleRotate(); 
+  if (activeResizeKind === 'rotate-plane') endPlaneRotate();
+  if (activeResizeKind === 'rotate-circle') endCircleRotate();
+
+  if (selectedObject instanceof THREE.Mesh && activeResizeKind) {
+    updateMeasurementsForShape(selectedObject.uuid);
+  }
+
+  // ✅ NEW: Clear alignment guides when drag ends
+  clearAlignmentGuides(scene);
 
   activeResizeHandle = null;
   activeResizeKind = null;
+}
+
+// ✅ NEW: Export functions to control alignment
+export function setAlignmentEnabled(enabled: boolean) {
+  alignmentEnabled = enabled;
+  if (!enabled) {
+    clearAlignmentGuides(scene);
+  }
+}
+
+export function isAlignmentEnabled(): boolean {
+  return alignmentEnabled;
 }

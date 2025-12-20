@@ -12,6 +12,8 @@ let dimensionsEnabled = true;
 
 export function setDimensionsEnabled(enabled: boolean) {
   dimensionsEnabled = enabled;
+
+
 }
 
 export function areDimensionsEnabled(): boolean {
@@ -20,9 +22,15 @@ export function areDimensionsEnabled(): boolean {
 
 
 export function refreshDimensionsForObject(selectedObject: THREE.Object3D | null) {
-  clearAllDimensions();
 
-  if (!dimensionsEnabled || !selectedObject) return;
+  
+  if (!dimensionsEnabled || !selectedObject){
+  clearAllDimensions();
+   return;
+}
+
+clearAllDimensions();
+ 
 
   if (selectedObject instanceof THREE.Mesh) {
     const geometryType = selectedObject.userData.geometryType;

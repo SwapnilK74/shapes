@@ -3,6 +3,9 @@ import * as THREE from 'three';
 import { getSelectedObject } from './selection';
 import { updateSelectionHelpers } from './selectionHelpers';
 import { projectMouseToPlaneForDom } from './sharedPointer';
+import { updateMeasurementsForShape } from './measurements/trackMeasurement';
+import { refreshDimensionsForObject } from './dimensions/dimensionUpdater';
+
 
 // --- STATE VARIABLES ---
 let isRotating = false;
@@ -49,11 +52,13 @@ export function updatePlaneRotate(
   mesh.rotation.z = initialRotation + angleDelta;
 
   if (event.shiftKey) {
-    const snapAngle = Math.PI / 12; // 15 degrees
+    const snapAngle = Math.PI / 12; 
     mesh.rotation.z = Math.round(mesh.rotation.z / snapAngle) * snapAngle;
   }
 
+  updateMeasurementsForShape(mesh.uuid);
   updateSelectionHelpers();
+  refreshDimensionsForObject(mesh);
 }
 
 export function endPlaneRotate() {

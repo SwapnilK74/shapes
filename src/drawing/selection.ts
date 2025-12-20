@@ -17,7 +17,7 @@ export function setSelectedObject(obj: THREE.Object3D | null) {
 
   if (selected) {
     updateSelectionHelpers();  // ← Changed from updateSelectionHelperOutline
-    refreshDimensionsForObject(selected);
+    // refreshDimensionsForObject(selected);
   } else {
     clearSelectionHelpers();   // ← Changed from clearSelectionHelperOutline
     refreshDimensionsForObject(null);

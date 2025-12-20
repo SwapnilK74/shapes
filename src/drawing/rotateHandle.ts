@@ -52,7 +52,7 @@ export function createRotateHandle(selectedObject: THREE.Object3D): THREE.Mesh {
   // Create handle
   const rotateHandleGeometry = new THREE.CircleGeometry(0.1, 16);
   const rotateHandleMaterial = new THREE.MeshBasicMaterial({ 
-    color: 0xFAF3E1,
+    color: 0xE4004B,
     side: THREE.DoubleSide 
   });
 
@@ -81,7 +81,7 @@ function createRotateHandleFromAABB(selectedObject: THREE.Object3D): THREE.Mesh 
 
   const rotateHandleGeometry = new THREE.CircleGeometry(0.1, 16);
   const rotateHandleMaterial = new THREE.MeshBasicMaterial({ 
-    color: 0xFAF3E1,
+    color: 0xE4004B,
     side: THREE.DoubleSide 
   });
 
