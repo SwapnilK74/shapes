@@ -41,23 +41,7 @@ export function calculatePerpendicularDirection(
 
 export const MIN_DIMENSION_LENGTH_M = 0.3048;
 
-/**
- * Convert meters to feet
- */
-function metersToFeet(meters: number): number {
-  return meters * 3.28084;
-}
 
-/**
- * Convert meters to feet and inches
- * Returns { feet, inches }
- */
-function metersToFeetInches(meters: number): { feet: number; inches: number } {
-  const totalInches = meters * 39.3701;
-  const feet = Math.floor(totalInches / 12);
-  const inches = totalInches % 12;
-  return { feet, inches };
-}
 
 /**
  * Format distance for display based on unit system
