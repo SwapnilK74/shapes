@@ -55,7 +55,7 @@ function calculateSignedOffset(
   const toClick = new THREE.Vector3().subVectors(clickPos, point1);
   
   // Project toClick onto the line to find closest point on line
-  const lineLength = lineDir.length();
+  // const lineLength = lineDir.length();
   const lineDirNorm = lineDir.clone().normalize();
   const projection = toClick.dot(lineDirNorm);
   const closestPointOnLine = point1.clone().add(

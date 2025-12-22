@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { useStore } from '../../store';
 import { resizeShapeLive } from './resizeFromLabel';
-import type { scene } from '../../core/scene';
+// import type { scene } from '../../core/scene';
 
 export type PlaneMeasureRole =
     | 'width-left-anchored'
