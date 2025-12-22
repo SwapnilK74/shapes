@@ -152,12 +152,23 @@ export function updateMeasurementsForShape(shapeId: string) {
       updated = true;
     }
 
+          console.log(
+  'updateMeasurementsForShape shape',
+  shapeId,
+  'measurements',
+  Array.from(measurementIds)
+);
+
     if (updated) {
       // Update measurement data
       updateMeasurementPoints(measurementId, newStartPoint, newEndPoint);
       
       // Update visuals
       updateMeasurementPositions(measurementId, measurement);
+      
+      
+
+
     }
   });
 }
@@ -293,11 +304,11 @@ function worldToLocal(worldPoint: THREE.Vector3, shape: THREE.Object3D): THREE.V
 }
 
 
-// function localToWorld(localPoint: THREE.Vector3, shape: THREE.Object3D): THREE.Vector3 {
-//   const worldPoint = localPoint.clone();
-//   shape.localToWorld(worldPoint);
-//   return worldPoint;
-// }
+function localToWorld(localPoint: THREE.Vector3, shape: THREE.Object3D): THREE.Vector3 {
+  const worldPoint = localPoint.clone();
+  shape.localToWorld(worldPoint);
+  return worldPoint;
+}
 
 
 

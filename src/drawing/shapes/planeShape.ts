@@ -9,22 +9,32 @@ export function createPlaneMesh(
   centerY: number
 ): THREE.Mesh {
   const geometry = new THREE.PlaneGeometry(width, height);
-  
-  // Get default colors from store
+
   const { defaultFillColor, defaultOutlineColor } = useStore.getState();
-  
+
   const material = new THREE.MeshBasicMaterial({
     color: hexToNumber(defaultFillColor),
     side: THREE.DoubleSide,
     transparent: true,
     opacity: 0.8
   });
-  
+
   const mesh = new THREE.Mesh(geometry, material);
   mesh.userData.geometryType = 'plane';
   mesh.position.set(centerX, centerY, 0.001);
 
-  // Outline with default outline color
+  const outline = createPlaneOutline(width, height, defaultOutlineColor);
+  mesh.add(outline);
+
+  return mesh;
+}
+
+// ✅ new helper: create outline only
+function createPlaneOutline(
+  width: number,
+  height: number,
+  colorHex: string
+): THREE.LineLoop {
   const halfWidth = width / 2;
   const halfHeight = height / 2;
 
@@ -38,12 +48,42 @@ export function createPlaneMesh(
 
   const outlineGeo = new THREE.BufferGeometry().setFromPoints(outlinePoints);
   const outlineMat = new THREE.LineBasicMaterial({
-    color: hexToNumber(defaultOutlineColor), // USE DEFAULT OUTLINE COLOR
+    color: hexToNumber(colorHex),
     linewidth: 1
   });
   (outlineMat as any).isOutlineMaterial = true;
-  const outline = new THREE.LineLoop(outlineGeo, outlineMat);
-  mesh.add(outline);
 
-  return mesh;
+  return new THREE.LineLoop(outlineGeo, outlineMat);
+}
+
+// ✅ new helper: update existing mesh + outline to a new width/height
+export function applyPlaneSize(
+  mesh: THREE.Mesh,
+  width: number,
+  height: number
+) {
+  // update fill
+  const oldGeom = mesh.geometry as THREE.PlaneGeometry;
+  oldGeom.dispose();
+  mesh.geometry = new THREE.PlaneGeometry(width, height);
+
+  // update outline child (assume first Line/LineLoop child is outline)
+  const outline = mesh.children.find(
+    c => c instanceof THREE.Line || c instanceof THREE.LineLoop
+  ) as THREE.Line | undefined;
+
+  if (outline) {
+    outline.geometry.dispose();
+
+    const { defaultOutlineColor } = useStore.getState();
+    const newOutline = createPlaneOutline(width, height, defaultOutlineColor);
+
+    // re-use existing outline material to keep selection styling etc
+    const existingMat = outline.material;
+    outline.geometry = newOutline.geometry;
+    outline.material = existingMat;
+  }
+
+  mesh.geometry.computeBoundingBox?.();
+  mesh.geometry.computeBoundingSphere?.();
 }

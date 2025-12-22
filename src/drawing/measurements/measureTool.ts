@@ -457,6 +457,19 @@ secondPointShapeUuid = snap ? findShapeUuidFromSnap(snap) : undefined;
       finalOffset
     );
 
+    const shapeUuid = firstPointShapeUuid || secondPointShapeUuid;
+    if (shapeUuid) {
+      measurement.shapeUuid = shapeUuid;
+      measurement.geometryType = 'plane';
+
+      const dir = new THREE.Vector3().subVectors(secondPoint, firstPoint);
+      if (Math.abs(dir.x) >= Math.abs(dir.y)) {
+        measurement.planeMeasureRole = 'width-left-anchored';
+      } else {
+        measurement.planeMeasureRole = 'height-bottom-anchored';
+      }
+    }
+
     attachMeasurementToShapes(
       measurement.id,
       firstPoint,

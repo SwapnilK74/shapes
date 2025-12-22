@@ -53,7 +53,7 @@ import {
   deselectMeasurement
 } from './measurements/measurementInteraction';
 
-// ✅ NEW: Import alignment system
+
 import { 
   findAlignmentCandidates, 
   getBestAlignments 
@@ -65,6 +65,8 @@ import {
 import { 
   applyAlignmentSnap 
 } from './alignment/alignmentSnapping';
+
+import { getShapeMeta, setShapeMeta } from './shapeMetadata';
 
 const raycaster = new THREE.Raycaster();
 const normalizedDeviceMouse = new THREE.Vector2();
@@ -198,6 +200,15 @@ export function beginSelectionDrag(event: MouseEvent, domElement: HTMLElement) {
   }
 }
 
+function syncPlaneMetaCenter(mesh: THREE.Mesh) {
+  const meta = getShapeMeta(mesh);
+  if (meta && meta.kind === 'plane') {
+    meta.center.set(mesh.position.x, mesh.position.y);
+    setShapeMeta(mesh, meta);
+  }
+}
+
+
 export function updateSelectionDrag(event: MouseEvent, domElement: HTMLElement) {
   if (isLabelDragging()) {
     updateLabelDrag(event, domElement);
@@ -294,6 +305,10 @@ export function updateSelectionDrag(event: MouseEvent, domElement: HTMLElement) 
     finalPosition.y,
     selectedObject.position.z
   );
+
+  if (selectedObject.userData.geometryType === 'plane') {
+  syncPlaneMetaCenter(selectedObject);
+}
 
   // Update measurements
   updateMeasurementsForShape(selectedObject.uuid);

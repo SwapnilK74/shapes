@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
-import type { AlignmentCandidate } from './alignmentDetection';
+import type { AlignmentCandidate, ShapeBounds } from './alignmentDetection';
 import { getShapeBounds } from './alignmentDetection';
 
 // Store active guide lines
@@ -57,7 +57,7 @@ export function updateAlignmentGuides(
   if (!draggedShape) return;
 
   const draggedBounds = getShapeBounds(draggedShape);
-  // const sceneExtent = 50; // How far the guide lines extend
+  const sceneExtent = 50; // How far the guide lines extend
 
   // Create vertical guide line
   if (verticalAlignment) {

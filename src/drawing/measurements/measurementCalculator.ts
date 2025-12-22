@@ -41,8 +41,6 @@ export function calculatePerpendicularDirection(
 
 export const MIN_DIMENSION_LENGTH_M = 0.3048;
 
-
-
 /**
  * Format distance for display based on unit system
  */
@@ -53,7 +51,7 @@ export function formatMeasurementDistance(distance: number, unitSystem?: UnitSys
     return `${distance.toFixed(2)} m`;
   } else {
     const totalFeet = distance * 3.28084;
-    return `${totalFeet.toFixed(2)} ft`; // ✅ Show as decimal feet
+    return `${totalFeet.toFixed(2)} ft`; 
   }
   // if (unit === 'metric') {
   //   // Metric: meters with 2 decimal places

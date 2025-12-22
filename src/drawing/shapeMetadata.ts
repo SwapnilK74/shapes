@@ -6,6 +6,13 @@ export type PlaneMeta = {
   center: THREE.Vector2;
   width: number;
   height: number;
+
+  corners?: {
+    topLeft: THREE.Vector2;
+    topRight: THREE.Vector2;
+     bottomRight: THREE.Vector2;
+    bottomLeft: THREE.Vector2;
+  }
 };
 
 export type CircleMeta = {

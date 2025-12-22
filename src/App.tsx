@@ -10,10 +10,10 @@ import type { ShapeTool } from './drawing/drawingState';
 import { getSelectedObject, setSelectedColor } from './drawing/selection';
 import { setSelectedOutlineColor } from './drawing/outlineSelection';
 import { initializeDimensionRenderer, updateAllDimensionLabels } from './drawing/dimensions/dimensionRenderer';
-// import { setUnitSystem, clearAllDimensions } from './drawing/dimensions/dimensionManager';
-// import type { UnitSystem } from './drawing/dimensions/dimensionManager';
-import { setDimensionsEnabled } from './drawing/dimensions/dimensionUpdater';
-import { getShapeWidthOffset, getShapeHeightOffset } from './drawing/dimensions/dimensionOffset';
+import { setUnitSystem, clearAllDimensions } from './drawing/dimensions/dimensionManager';
+import type { UnitSystem } from './drawing/dimensions/dimensionManager';
+import { refreshDimensionsForObject, setDimensionsEnabled } from './drawing/dimensions/dimensionUpdater';
+import { getShapeWidthOffset, setShapeWidthOffset, getShapeHeightOffset, setShapeHeightOffset } from './drawing/dimensions/dimensionOffset';
 import { startMeasureMode, exitMeasureMode, setSnapToPoints, setSnapToEdges, setAllowFreeMeasurement } from './drawing/measurements/measureTool';
 import { initializeMeasurementRenderer, updateAllMeasurementLabels,toggleAllMeasurementsVisibility  } from './drawing/measurements/measurementRenderer';
 import { deleteMeasurementById, deselectMeasurement } from './drawing/measurements/measurementInteraction';
@@ -21,7 +21,7 @@ import MeasurementSettings from './components/MeasurementSettings';
 import { useStore } from './store';
 import * as THREE from 'three';
 import { deleteSelectedShape } from './drawing/deleteShape';
-import { setAlignmentEnabled,  } from './drawing/dragSelection';
+import { setAlignmentEnabled, isAlignmentEnabled } from './drawing/dragSelection';
 
 
 import './index.css';
@@ -74,10 +74,10 @@ const App: React.FC = () => {
   const activeMeasurementId = useStore((state) => state.activeMeasurementId);
 
   const [activeTool, setActiveTool] = useState<ShapeTool>('select');
-  // const [currentUnit, setCurrentUnit] = useState<UnitSystem>('metric');
-  const [showDimensions, ] = useState(false);
-  const [, setSelectedWidthOffset] = useState<number>(0.5);
-  const [, setSelectedHeightOffset] = useState<number>(0.5);
+  const [currentUnit, setCurrentUnit] = useState<UnitSystem>('metric');
+  const [showDimensions, setShowDimensions] = useState(false);
+  const [selectedWidthOffset, setSelectedWidthOffset] = useState<number>(0.5);
+  const [selectedHeightOffset, setSelectedHeightOffset] = useState<number>(0.5);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [measureModeActive, setMeasureModeActive] = useState(false);
 const [measurementsVisible, setMeasurementsVisible] = useState(true);
@@ -93,8 +93,6 @@ const [alignmentEnabledState, setAlignmentEnabledState] = useState<boolean>(true
   const [selectedShapeFillColor, setSelectedShapeFillColor] = useState<string>('#00ff88');
   const [selectedShapeOutlineColor, setSelectedShapeOutlineColor] = useState<string>('#ffffff');
 
-
-  
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -113,15 +111,15 @@ const [alignmentEnabledState, setAlignmentEnabledState] = useState<boolean>(true
     const controls = createControls(camera, renderer.domElement);
     attachDrawingEvents(renderer.domElement);
 
-  //     const handleLabelDblClick = (e: MouseEvent) => {
-  //   // delegate to measurementInteraction helper
-  //   import('./drawing/measurements/measurementInteraction').then(
-  //     ({ handleLabelDoubleClick }) => {
-  //       handleLabelDoubleClick(e, wrapper);
-  //     }
-  //   );
-  // };
-  // wrapper.addEventListener('dblclick', handleLabelDblClick);
+      const handleLabelDblClick = (e: MouseEvent) => {
+    // delegate to measurementInteraction helper
+    import('./drawing/measurements/measurementInteraction').then(
+      ({ handleLabelDoubleClick }) => {
+        handleLabelDoubleClick(e, wrapper);
+      }
+    );
+  };
+  wrapper.addEventListener('dblclick', handleLabelDblClick);
 
     const onResize = () => {
       const r = wrapper.getBoundingClientRect();
@@ -170,7 +168,6 @@ const [alignmentEnabledState, setAlignmentEnabledState] = useState<boolean>(true
     if (selectedObject && showDimensions) {
       const shapeWidthOffset = getShapeWidthOffset(selectedObject);
       const shapeHeightOffset = getShapeHeightOffset(selectedObject);
-      
       
       setSelectedWidthOffset(shapeWidthOffset);
       setSelectedHeightOffset(shapeHeightOffset);
@@ -284,51 +281,51 @@ useEffect(() => {
     setSelectedOutlineColor(hex);
   };
 
-  // const handleUnitToggle = () => {
-  //   const newUnit: UnitSystem = currentUnit === 'metric' ? 'imperial' : 'metric';
-  //   setCurrentUnit(newUnit);
-  //   setUnitSystem(newUnit);
+  const handleUnitToggle = () => {
+    const newUnit: UnitSystem = currentUnit === 'metric' ? 'imperial' : 'metric';
+    setCurrentUnit(newUnit);
+    setUnitSystem(newUnit);
     
-  //   if (showDimensions) {
-  //     const selectedObject = getSelectedObject();
-  //     refreshDimensionsForObject(selectedObject);
-  //   }
-  // };
+    if (showDimensions) {
+      const selectedObject = getSelectedObject();
+      refreshDimensionsForObject(selectedObject);
+    }
+  };
 
-  // const handleDimensionToggle = () => {
-  //   const newShowState = !showDimensions;
-  //   setShowDimensions(newShowState);
-  //   setDimensionsEnabled(newShowState);
+  const handleDimensionToggle = () => {
+    const newShowState = !showDimensions;
+    setShowDimensions(newShowState);
+    setDimensionsEnabled(newShowState);
 
-  //   if (newShowState) {
-  //     const selectedObject = getSelectedObject();
-  //     refreshDimensionsForObject(selectedObject);
-  //   } else {
-  //     clearAllDimensions();
-  //   }
-  // };
+    if (newShowState) {
+      const selectedObject = getSelectedObject();
+      refreshDimensionsForObject(selectedObject);
+    } else {
+      clearAllDimensions();
+    }
+  };
 
-  // const handleWidthOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const value = parseFloat(e.target.value) || 0;
-  //   setSelectedWidthOffset(value);
+  const handleWidthOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setSelectedWidthOffset(value);
     
-  //   const selectedObject = getSelectedObject();
-  //   if (selectedObject && showDimensions) {
-  //     setShapeWidthOffset(selectedObject, value);
-  //     refreshDimensionsForObject(selectedObject);
-  //   }
-  // };
+    const selectedObject = getSelectedObject();
+    if (selectedObject && showDimensions) {
+      setShapeWidthOffset(selectedObject, value);
+      refreshDimensionsForObject(selectedObject);
+    }
+  };
 
-  // const handleHeightOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const value = parseFloat(e.target.value) || 0;
-  //   setSelectedHeightOffset(value);
+  const handleHeightOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setSelectedHeightOffset(value);
     
-  //   const selectedObject = getSelectedObject();
-  //   if (selectedObject && showDimensions) {
-  //     setShapeHeightOffset(selectedObject, value);
-  //     refreshDimensionsForObject(selectedObject);
-  //   }
-  // };
+    const selectedObject = getSelectedObject();
+    if (selectedObject && showDimensions) {
+      setShapeHeightOffset(selectedObject, value);
+      refreshDimensionsForObject(selectedObject);
+    }
+  };
 
   const handleSnapPointsToggle = () => {
     const newState = !snapPointsEnabled;

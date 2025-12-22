@@ -5,6 +5,7 @@ import { updateSelectionHelpers } from './selectionHelpers';
 import { projectMouseToPlaneForDom } from './sharedPointer';
 import { refreshDimensionsForObject } from './dimensions/dimensionUpdater';
 import { updateMeasurementsForShape } from './measurements/trackMeasurement';
+import { getShapeMeta, setShapeMeta } from './shapeMetadata';
 
 
 // --- STATE VARIABLES ---
@@ -164,6 +165,20 @@ export function updatePlaneResize(
  updateMeasurementsForShape(mesh.uuid);
   updateSelectionHelpers();
   refreshDimensionsForObject(mesh);
+
+  const bbox = mesh.geometry.boundingBox;
+if (bbox) {
+  const newWidth = bbox.max.x - bbox.min.x;
+  const newHeight = bbox.max.y - bbox.min.y;
+
+  const meta = getShapeMeta(mesh);
+  if (meta && meta.kind === 'plane') {
+    meta.width = newWidth;
+    meta.height = newHeight;
+    meta.center = new THREE.Vector2(mesh.position.x, mesh.position.y);
+    setShapeMeta(mesh, meta);
+  }
+}
 }
 
 export function endPlaneResize() {
